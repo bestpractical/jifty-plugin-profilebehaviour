@@ -4,6 +4,8 @@ use warnings;
 package Jifty::Plugin::ProfileBehaviour;
 use base qw/Jifty::Plugin/;
 
+our $VERSION = '0.01';
+
 =head1 NAME
 
 Jifty::Plugin::ProfileBehaviour - Overrides behavior.js to add profiling information

@@ -173,14 +173,6 @@ var Behaviour = {
         Behaviour.loaded = true;
         Behaviour.apply();
 
-        // Add the profiling CSS to the document
-        var head = document.getElementsByTagName('head')[0];
-        var link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = '/css/behaviour-profile.css';
-        head.appendChild(link);
-
         var open = this.createElement('a', null, 'Behaviour profile');
         open.id = 'show-behaviour-profile';
         open.href ='#';

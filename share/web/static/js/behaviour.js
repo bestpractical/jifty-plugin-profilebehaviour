@@ -11,7 +11,8 @@ var Behaviour = {
         searchTime: 0,
         numCalls: 0
     },
-    list: new Array(),
+
+    list: [],
     
     register: function(sheet) {
         Behaviour.list.push(sheet);
@@ -19,8 +20,6 @@ var Behaviour = {
     
     apply: function() {
         var root = arguments[0];
-        if(root) root = $(root);
-        var _applyStart = new Date();
         var profile = {
             searchTimes: {},
             applyTimes: {},
@@ -32,18 +31,21 @@ var Behaviour = {
 
         for (var h = 0; sheet = Behaviour.list[h]; h++) {
             for (var selector in sheet) {
+
                 var start = new Date();
-                var elements = cssQuery(selector, root);
-                var searchDone = new Date();
-                profile.searchTimes[selector] = searchDone - start;
+                var elements = jQuery(selector, root);
+                var done  = new Date();
+
+                profile.searchTimes[selector] = done - start;
                 profile.searchTime += profile.searchTimes[selector];
                 
-                if ( !elements ) continue;
+                start = new Date();
+                elements.each(function() { 
+                    sheet[selector](this);
+                });
+                done  = new Date();
 
-                for (var i = 0; element = elements[i]; i++) {
-                    sheet[selector](element);
-                }
-                profile.applyTimes[selector] = new Date() - searchDone;
+                profile.applyTimes[selector] = done - start;
                 profile.applyTime += profile.applyTimes[selector];
                 profile.funcs[selector] = sheet[selector];
             }
@@ -64,7 +66,7 @@ var Behaviour = {
         title.className = 'title';
         var close = this.createElement('a', 'close', '[close]');
         close.href = '#';
-        close.onclick = function() { Element.remove($('behaviour-profile-data')); }
+        close.onclick = function() { jQuery('#behaviour-profile-data').remove(); };
 
         pane.appendChild(close);
         pane.appendChild(title);
@@ -88,24 +90,29 @@ var Behaviour = {
             var table = this.createElement('table');
             var head = this.createElement('tr');
             head.appendChild(this.createElement('th', 'selector', 'Selector'));
-            head.appendChild(this.createElement('th', 'time search', 'cssQuery time'));
-            head.appendChild(this.createElement('th', 'time apply', 'Function time'));
-            head.appendChild(this.createElement('th', 'time total', 'Total time'));
+            head.appendChild(this.createElement('th', 'time search', 'Query time (ms)'));
+            head.appendChild(this.createElement('th', 'time apply', 'Apply time (ms)'));
+            head.appendChild(this.createElement('th', 'time total', 'Total time (ms)'));
             head.appendChild(this.createElement('th'));
             table.appendChild(head);
 
-            var searchTimes = $H(call.searchTimes).keys().sort(function(a,b) {
-                    var timeA = call.searchTimes[a] + call.applyTimes[a];
-                    var timeB = call.searchTimes[b] + call.applyTimes[b];
-                
-                    if(timeA < timeB) {
-                        return 1;
-                    } else if(timeA > timeB) {
-                        return -1;
-                    } else {
-                        return 0;
-                    }
-                });
+            var keys = [];
+            jQuery.each(call.searchTimes, function(k,v) {
+                keys.push( k );
+            });
+
+            var searchTimes = keys.sort(function(a,b) {
+                var timeA = call.searchTimes[a] + call.applyTimes[a];
+                var timeB = call.searchTimes[b] + call.applyTimes[b];
+            
+                if(timeA < timeB) {
+                    return 1;
+                } else if(timeA > timeB) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            });
             
             for(var j = 0; j < searchTimes.length; j++) {
                 var k = searchTimes[j];
@@ -119,12 +126,12 @@ var Behaviour = {
                 var a = this.createElement('a', null, '[code]');
                 a.href = '#';
                 var src = this.createElement('code', null, call.funcs[k]);
-                var id =  'code-' + i + '-' + j;
+                var id = 'code-' + i + '-' + j;
                 src.id = id;
                 src.style.display = 'none';
                 // Kludge to make the onclick function close over id properly
                 (function (id) {
-                    a.onclick = function() { Element.toggle($(id)); return false; }
+                    a.onclick = function() { jQuery('#'+id).toggle(); return false; }
                 })(id);
 
                 var div = this.createElement('div');
@@ -139,9 +146,9 @@ var Behaviour = {
 
             item.appendChild(this.createElement('div','totals',
                                                 'Total: '
-                                                + call.searchTime + ' search, '
-                                                + call.applyTime + ' apply, '
-                                                + (call.searchTime + call.applyTime) + ' total'));
+                                                + call.searchTime + 'ms search, '
+                                                + call.applyTime + 'ms apply, '
+                                                + (call.searchTime + call.applyTime) + 'ms total'));
                                            
             
             list.appendChild(item);
@@ -162,7 +169,7 @@ var Behaviour = {
 
     onLoad: function () {
         // Make sure we only run once
-        if(Behaviour.loaded) return;
+        if (Behaviour.loaded) return;
         Behaviour.loaded = true;
         Behaviour.apply();
 
@@ -184,14 +191,18 @@ var Behaviour = {
     },
 
     toggleProfile: function () {
-        var e = $('behaviour-profile-data');
-        if(e) {
-            Element.remove(e);
+        var e = jQuery('#behaviour-profile-data');
+        if (e.length) {
+            e.remove();
         } else {
             this.showProfile();
         }
     }
-}
+};
 
+(function($) {
+    $(document).ready(function(){
+        Behaviour.onLoad();
+    });
+})(jQuery);
 
-DOM.Events.addListener( window, "load", function() { Behaviour.onLoad() } );
